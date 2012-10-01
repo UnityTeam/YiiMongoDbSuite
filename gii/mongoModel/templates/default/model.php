@@ -11,7 +11,7 @@
  * - $relations: list of relations (name=>relation declaration)
  * - $primaryKey: primary key name
  */
-?>
+?><?php $tName=end(explode(".", $tableName));  ?> 
 <?php echo "<?php\n"; ?>
 
 /**
@@ -19,6 +19,9 @@
  */
 class <?php echo $modelClass; ?> extends <?php echo $this->baseClass."\n"; ?>
 {
+	public static $_collectionName = '<?php echo $collectionName; ?>';
+	public static $_tableName = '<?php echo $tName ; ?>';
+	public static $_sqlClassName =  <?php	$txt = array_key_exists($tName, $oldClassNames) ? json_encode($oldClassNames[$tName]['className']) : 'false'; echo $txt; ?>;
 <?php foreach($columns as $column): ?>
 	public <?php echo '$'.$column->name.";\n"; ?>
 <?php endforeach; ?>
@@ -30,6 +33,14 @@ class <?php echo $modelClass; ?> extends <?php echo $this->baseClass."\n"; ?>
 	public static function model($className=__CLASS__)
 	{
 		return parent::model($className);
+	}
+
+	public function sqlClass(){
+		return static::$_sqlClassName;
+	}
+
+	public function getSqlModel(){
+		return CActiveRecord::model($this->sqlClass());
 	}
 
 	/**
@@ -45,7 +56,7 @@ class <?php echo $modelClass; ?> extends <?php echo $this->baseClass."\n"; ?>
 	 */
 	public function getCollectionName()
 	{
-		return '<?php echo $collectionName; ?>';
+		return static::$_collectionName;
 	}
 
 	/**

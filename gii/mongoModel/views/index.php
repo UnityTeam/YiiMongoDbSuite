@@ -63,6 +63,15 @@ $('.form .row.model-class').toggle($('#{$class}_tableName').val().substring($('#
 		<?php echo $form->error($model,'tableName'); ?>
 	</div>
 	<div class="row model-class">
+		<?php echo $form->label($model,'modelClassPrefix',array('required'=>false)); ?>
+		<?php echo $form->textField($model,'modelClassPrefix', array('size'=>10)); ?>
+		<div class="tooltip">
+		A Prefix to put in front of the name of the model class to be generated (e.g. <code>Mg</code>, <code>Mongo</code>).
+		It is case-sensitive.
+		</div>
+		<?php echo $form->error($model,'modelClassPrefix'); ?>
+	</div>
+	<div class="row model-class">
 		<?php echo $form->label($model,'modelClass',array('required'=>true)); ?>
 		<?php echo $form->textField($model,'modelClass', array('size'=>65)); ?>
 		<div class="tooltip">

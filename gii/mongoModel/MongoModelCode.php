@@ -11,7 +11,7 @@ class MongoModelCode extends CCodeModel
 	public $mongoCollectionName;
 	public $modelPath='application.models';
 	public $baseClass='EMongoDocument';
-
+	public $modelClassPrefix = "";
 	/**
 	 * @var array list of candidate relation code. The array are indexed by AR class names and relation names.
 	 * Each element represents the code of the one relation in one AR class.
@@ -21,7 +21,7 @@ class MongoModelCode extends CCodeModel
 	public function rules()
 	{
 		return array_merge(parent::rules(), array(
-			array('tablePrefix, baseClass, tableName, modelClass, modelPath', 'filter', 'filter'=>'trim'),
+			array('tablePrefix, baseClass, tableName, modelClass, modelPath,modelClassPrefix', 'filter', 'filter'=>'trim'),
 			array('tableName, modelPath, baseClass, mongoCollectionName', 'required'),
 			array('tablePrefix, tableName, modelPath, mongoCollectionName', 'match', 'pattern'=>'/^(\w+[\w\.]*|\*?|\w+\.\*)$/', 'message'=>'{attribute} should only contain word characters, dots, and an optional ending asterisk.'),
 			array('tableName', 'validateTableName', 'skipOnError'=>true),
@@ -41,6 +41,7 @@ class MongoModelCode extends CCodeModel
 			'modelPath'=>'Model Path',
 			'modelClass'=>'Model Class',
 			'baseClass'=>'Base Class',
+			'modelClassPrefix' => 'ModelClass Prefix'
 		));
 	}
 
@@ -90,15 +91,17 @@ class MongoModelCode extends CCodeModel
 			$tables=array($this->getTableSchema($this->tableName));
 
 		$this->relations=$this->generateRelations();
-
+		$bMulti = count($tables) > 1;
+		$oldClassNames = $this->generateOldClassnames();
 		foreach($tables as $table)
 		{
 			$tableName=$this->removePrefix($table->name);
 			$className=$this->generateClassName($table->name);
 			$params=array(
 				'tableName'=>$schema==='' ? $tableName : $schema.'.'.$tableName,
-				'modelClass'=>$className,
-				'collectionName'=>$this->mongoCollectionName,
+				'modelClass'=>  $className,
+				'oldClassNames' => $oldClassNames,
+				'collectionName'=> $bMulti ? 'sql_' . $tableName :  $this->mongoCollectionName,
 				'columns'=>$table->columns,
 				'labels'=>$this->generateLabels($table),
 				'rules'=>$this->generateRules($table),
@@ -313,6 +316,8 @@ class MongoModelCode extends CCodeModel
 			if($name!=='')
 				$className.=ucfirst($name);
 		}
+		if (!empty($this->modelClassPrefix))
+			$className = ucfirst($this->modelClassPrefix) . $className;
 		return $className;
 	}
 
@@ -345,5 +350,18 @@ class MongoModelCode extends CCodeModel
 		for($name=$names[0], $i=1;$i<count($names);++$i)
 			$name.=ucfirst($names[$i]);
 		return $name;
+	}
+
+	protected function generateOldClassnames(){
+			$files = array();
+			foreach(glob(Yii::getPathOfAlias('application.models.sql')."/*") as $file){$files[] = basename($file, '.php'); }
+			$out = array();
+			foreach($files as $curr){ 
+				$tableName = $curr::model()->tableName() ;
+				$out[$tableName] = array('className' => $curr, 'tableName' => $tableName, 
+					'primaryKey' => $curr::model()->primaryKey()); 
+					 }
+					 //die('<pre>' . print_r($out) . '</pre>');
+					 return $out;
 	}
 }
